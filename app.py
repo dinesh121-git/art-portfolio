@@ -41,20 +41,33 @@ def fetch_ip_intel(ip: str) -> dict:
 
 def save_visit(ip, user_agent, referrer):
     try:
-        print("🚀 save_visit triggered")
-
         col = get_db()
         if col is None:
-            print("❌ MongoDB NOT connected")
+            print("MongoDB not connected")
             return
 
-        print("✅ MongoDB connected")
+        intel = fetch_ip_intel(ip)
 
-        col.insert_one({"test": "hello"})
-        print("✅ Insert success")
+        ua = user_agent.lower()
+        if "iphone" in ua:
+            device = "iPhone"
+        elif "android" in ua:
+            device = "Android"
+        else:
+            device = "Other"
+
+        col.insert_one({
+            "ip": ip,
+            "device": device,
+            "city": intel["city"],
+            "country": intel["country"],
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+
+        print("✅ Real visit stored")
 
     except Exception as e:
-        print("❌ ERROR:", e)
+        print("ERROR:", e)
 
         intel = fetch_ip_intel(ip)
 
