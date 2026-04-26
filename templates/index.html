@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portfolio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:     #080808;
+      --accent: #c8a97e;
+      --dim:    rgba(255,255,255,0.18);
+      --slide-transition: 0.75s cubic-bezier(0.77, 0, 0.175, 1);
+      --ghibli-transition: 1.4s ease-in-out;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--bg);
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      overflow: hidden;
+      cursor: none;
+    }
+
+    /* ── Custom cursor ── */
+    .cursor {
+      position: fixed;
+      width: 8px; height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: width 0.25s, height 0.25s, background 0.25s;
+    }
+    .cursor.big {
+      width: 38px; height: 38px;
+      background: transparent;
+      border: 1px solid var(--accent);
+    }
+
+    /* ── Slideshow wrapper ── */
+    .slideshow {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Each "pair" = one drawing + its Ghibli version */
+    .pair {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity var(--slide-transition);
+      pointer-events: none;
+    }
+    .pair.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Image stack: Ghibli sits on top, starts invisible */
+    .img-stack {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .img-stack img {
+      max-width: 82vw;
+      max-height: 82vh;
+      object-fit: contain;
+      display: block;
+      box-shadow: 0 0 120px rgba(0,0,0,0.9), 0 0 40px rgba(0,0,0,0.6);
+      filter: contrast(1.02) brightness(0.97);
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    /* Ghibli image overlaid exactly on top of original */
+    .img-ghibli {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      opacity: 0;
+      transition: opacity var(--ghibli-transition);
+    }
+
+    /* When pair has class "ghibli-active", fade Ghibli in */
+    .pair.ghibli-active .img-ghibli {
+      opacity: 1;
+    }
+
+    /* ── Label pill ── */
+    .label {
+      position: fixed;
+      top: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.65rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--dim);
+      font-style: italic;
+      transition: opacity 0.5s, color 0.8s;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .label.ghibli { color: var(--accent); opacity: 0.85; }
+
+    /* ── Nav arrows ── */
+    .nav {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 100;
+      background: none;
+      border: none;
+      padding: 16px;
+      cursor: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .nav svg { width: 28px; height: 28px; stroke: #fff; fill: none; stroke-width: 1.2; transition: stroke 0.2s; }
+    .nav:hover svg { stroke: var(--accent); }
+    .nav.left  { left:  24px; }
+    .nav.right { right: 24px; }
+    body:hover .nav { opacity: 0.5; }
+    body:hover .nav:hover { opacity: 1; }
+
+    /* ── Dots ── */
+    .dots {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      z-index: 100;
+    }
+    .dot {
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: var(--dim);
+      transition: background 0.4s, transform 0.4s;
+      cursor: none;
+    }
+    .dot.active { background: var(--accent); transform: scale(1.5); }
+
+    /* ── Counter ── */
+    .counter {
+      position: fixed;
+      bottom: 52px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      color: var(--dim);
+      font-weight: 300;
+      font-style: italic;
+      user-select: none;
+    }
+
+    /* ── Grain overlay ── */
+    .grain {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 200;
+      opacity: 0.045;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 256px 256px;
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 600px) {
+      .nav { display: none; }
+      .img-stack img { max-width: 92vw; max-height: 74vh; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="grain"></div>
+<div class="label" id="label">Original</div>
+
+<div class="slideshow" id="slideshow">
+
+  <!--
+  ╔══════════════════════════════════════════════════════════════╗
+  ║  HOW TO ADD YOUR 4 DRAWINGS                                  ║
+  ║                                                              ║
+  ║  Put all 8 images in:  static/images/                        ║
+  ║                                                              ║
+  ║  Naming convention (recommended):                            ║
+  ║    drawing1.jpg          ← your original                     ║
+  ║    drawing1_ghibli.jpg   ← the Ghibli version                ║
+  ║    drawing2.jpg                                              ║
+  ║    drawing2_ghibli.jpg   ...and so on                        ║
+  ║                                                              ║
+  ║  Replace the src="" values below with your actual filenames  ║
+  ╚══════════════════════════════════════════════════════════════╝
+  -->
+
+  <!-- Drawing 1 -->
+  <div class="pair active" data-index="0">
+    <div class="img-stack">
+      <img class="img-original" src="/static/images/drawing1.jpg"        alt="Drawing 1" />
+      <img class="img-ghibli"   src="/static/images/drawing1_ghibli.jpg" alt="Drawing 1 — Ghibli" />
+    </div>
+  </div>
+
+  <!-- Drawing 2 -->
+  <div class="pair" data-index="1">
+    <div class="img-stack">
+      <img class="img-original" src="/static/images/drawing2.jpg"        alt="Drawing 2" />
+      <img class="img-ghibli"   src="/static/images/drawing2_ghibli.jpg" alt="Drawing 2 — Ghibli" />
+    </div>
+  </div>
+
+  <!-- Drawing 3 -->
+  <div class="pair" data-index="2">
+    <div class="img-stack">
+      <img class="img-original" src="/static/images/drawing3.jpg"        alt="Drawing 3" />
+      <img class="img-ghibli"   src="/static/images/drawing3_ghibli.jpg" alt="Drawing 3 — Ghibli" />
+    </div>
+  </div>
+
+  <!-- Drawing 4 -->
+  <div class="pair" data-index="3">
+    <div class="img-stack">
+      <img class="img-original" src="/static/images/drawing4.jpg"        alt="Drawing 4" />
+      <img class="img-ghibli"   src="/static/images/drawing4_ghibli.jpg" alt="Drawing 4 — Ghibli" />
+    </div>
+  </div>
+
+</div>
+
+<!-- Navigation -->
+<button class="nav left"  id="prev" aria-label="Previous">
+  <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+</button>
+<button class="nav right" id="next" aria-label="Next">
+  <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+</button>
+
+<div class="dots"    id="dots"></div>
+<div class="counter" id="counter"></div>
+
+<script>
+  const pairs    = [...document.querySelectorAll('.pair')];
+  const dotsEl   = document.getElementById('dots');
+  const counterEl= document.getElementById('counter');
+  const labelEl  = document.getElementById('label');
+  const total    = pairs.length;
+  let current    = 0;
+  let ghibliTimer= null;
+  let busy       = false;
+
+  // ── Build dots ─────────────────────────────────────────────────
+  pairs.forEach((_, i) => {
+    const d = document.createElement('span');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.addEventListener('click', () => goTo(i));
+    dotsEl.appendChild(d);
+  });
+
+  function updateCounter() {
+    counterEl.textContent = `${current + 1}  /  ${total}`;
+  }
+
+  // ── Schedule Ghibli crossfade ──────────────────────────────────
+  // Called every time a new slide becomes active.
+  // Waits 1.5s, then fades in the Ghibli layer.
+  function scheduleGhibli() {
+    clearTimeout(ghibliTimer);
+    pairs.forEach(p => p.classList.remove('ghibli-active'));
+    labelEl.className = 'label';
+    labelEl.textContent = 'Original';
+
+    ghibliTimer = setTimeout(() => {
+      pairs[current].classList.add('ghibli-active');
+      labelEl.className = 'label ghibli';
+      labelEl.textContent = 'Ghibli ✦';
+    }, 1500);
+  }
+
+  // ── Navigate ───────────────────────────────────────────────────
+  function goTo(n) {
+    if (busy) return;
+    busy = true;
+
+    pairs[current].classList.remove('active', 'ghibli-active');
+    document.querySelectorAll('.dot')[current].classList.remove('active');
+
+    current = ((n % total) + total) % total;
+
+    pairs[current].classList.add('active');
+    document.querySelectorAll('.dot')[current].classList.add('active');
+    updateCounter();
+    scheduleGhibli();
+
+    setTimeout(() => { busy = false; }, 800);
+  }
+
+  document.getElementById('next').addEventListener('click', () => goTo(current + 1));
+  document.getElementById('prev').addEventListener('click', () => goTo(current - 1));
+
+  // Keyboard
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goTo(current + 1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   goTo(current - 1);
+  });
+
+  // Touch swipe
+  let tx = 0;
+  document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend',   e => {
+    const dx = e.changedTouches[0].clientX - tx;
+    if (Math.abs(dx) > 48) goTo(current + (dx < 0 ? 1 : -1));
+  });
+
+  // Init
+  updateCounter();
+  scheduleGhibli();
+
+  // ── Custom cursor ──────────────────────────────────────────────
+  const cursor = document.getElementById('cursor');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px';
+    cursor.style.top  = e.clientY + 'px';
+  });
+  document.querySelectorAll('button, .dot').forEach(el => {
+    el.addEventListener('mouseenter', () => cursor.classList.add('big'));
+    el.addEventListener('mouseleave', () => cursor.classList.remove('big'));
+  });
+</script>
+</body>
+</html>
