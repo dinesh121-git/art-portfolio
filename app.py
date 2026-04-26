@@ -40,11 +40,21 @@ def fetch_ip_intel(ip: str) -> dict:
 
 
 def save_visit(ip, user_agent, referrer):
-    """Runs in a background thread — visitor never waits for this."""
     try:
+        print("🚀 save_visit triggered")
+
         col = get_db()
         if col is None:
+            print("❌ MongoDB NOT connected")
             return
+
+        print("✅ MongoDB connected")
+
+        col.insert_one({"test": "hello"})
+        print("✅ Insert success")
+
+    except Exception as e:
+        print("❌ ERROR:", e)
 
         intel = fetch_ip_intel(ip)
 
